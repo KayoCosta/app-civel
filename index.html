@@ -22,7 +22,7 @@
         </div>
         <div class="qr-code">
             <p id="edital-text">Consulte o edital.</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" alt="QR Code para o PDF atual">
+            <img id="qr-code-img" src="" alt="QR Code para o PDF atual">
         </div>
         <div class="qr-code-string">
             <p>Páginas <span id="page-num">1</span> de <span id="page-count">1</span></p>
@@ -34,6 +34,7 @@
             </a>
         </div>
     </div>
+
     <div class="main-content">
         <div id="pdf-container">
             <canvas id="pdf-render1"></canvas>
