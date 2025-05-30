@@ -1,3 +1,4 @@
+// Importando a biblioteca PDF.js
 const pdfjsLib = window['pdfjs-dist/build/pdf'];
 
 if (!pdfjsLib || !pdfjsLib.getDocument) {
@@ -5,9 +6,7 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
 } else {
     const apiKey = 'AIzaSyCZOcYgSCAX0pTWBR1mJ8m-udAFAIyGyRA';
     const folderId = '1hagP5Eb8IzykGQVBB-zc8mKn8JIhm5TH';
-
-    const encodedQuery = encodeURIComponent(`'${folderId}' in parents and mimeType='application/pdf' and trashed=false`);
-    const driveApiUrl = `https://www.googleapis.com/drive/v3/files?q=${encodedQuery}&fields=files(id,name)&key=${apiKey}`;
+    const driveApiUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and mimeType='application/pdf' and trashed=false&key=${apiKey}`;
 
     let pdfDoc = null;
     let pageNum = 1;
@@ -28,17 +27,24 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            const renderContext = { canvasContext: ctx, viewport: viewport };
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
             const renderTask = page.render(renderContext);
 
-            renderTask.promise.then(() => {
+            renderTask.promise.then(function() {
                 pageRendering = false;
                 if (pageNumPending !== null) {
                     renderPage(pageNumPending, canvas, ctx);
                     pageNumPending = null;
                 }
-            }).catch(error => console.error("Erro ao renderizar a página:", error));
-        }).catch(error => console.error("Erro ao carregar a página:", error));
+            }).catch(function(error) {
+                console.error("Erro ao renderizar a página: ", error);
+            });
+        }).catch(function(error) {
+            console.error("Erro ao carregar a página: ", error);
+        });
     }
 
     function queueRenderPage(num) {
@@ -82,48 +88,7 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
                 setInterval(nextPage, 10000);
             }
 
-            const qrImg = document.getElementById("qr-code-img");
-            if (qrImg) {
-                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pdfUrl)}`;
-            }
-        }).catch(error => {
-            console.error("Erro ao carregar o PDF:", error);
-        });
-    }
-
-    fetch(driveApiUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (!data.files || data.files.length === 0) {
-                console.error("Nenhum PDF encontrado na pasta ou falta de permissão.");
-                return;
-            }
-
-            pdfList = data.files.map(file => `https://drive.google.com/uc?export=download&id=${file.id}`);
-            loadPdfFromDrive(pdfList[currentPdfIndex]);
-
-            if (pdfList.length > 1) {
-                setInterval(() => {
-                    currentPdfIndex = (currentPdfIndex + 1) % pdfList.length;
-                    loadPdfFromDrive(pdfList[currentPdfIndex]);
-                }, 30000);
-            }
-        })
-        .catch(error => {
-            console.error("Erro ao buscar arquivos do Google Drive:", error);
-        });
-
-    function updateTime() {
-        const now = new Date();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        const timeElement = document.getElementById('time');
-        if (timeElement) {
-            timeElement.textContent = `${hours}:${minutes}:${seconds}`;
-        }
-    }
-
-    setInterval(updateTime, 1200);
-    updateTime();
-}
+            // Atualiza o QR Code com o PDF atual
+            const qrImg =
+::contentReference[oaicite:27]{index=27}
+ 
