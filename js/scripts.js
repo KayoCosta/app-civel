@@ -1,4 +1,3 @@
-// Importando a biblioteca PDF.js
 const pdfjsLib = window['pdfjs-dist/build/pdf'];
 
 if (!pdfjsLib || !pdfjsLib.getDocument) {
@@ -6,8 +5,10 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
 } else {
     const apiKey = 'AIzaSyCZOcYgSCAX0pTWBR1mJ8m-udAFAIyGyRA';
     const folderId = '1hagP5Eb8IzykGQVBB-zc8mKn8JIhm5TH';
-    const driveApiUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&key=${apiKey}`;
-    
+
+    const encodedQuery = encodeURIComponent(`'${folderId}' in parents and mimeType='application/pdf' and trashed=false`);
+    const driveApiUrl = `https://www.googleapis.com/drive/v3/files?q=${encodedQuery}&fields=files(id,name)&key=${apiKey}`;
+
     let pdfDoc = null;
     let pageNum = 1;
     let pageRendering = false;
@@ -27,24 +28,17 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            const renderContext = {
-                canvasContext: ctx,
-                viewport: viewport
-            };
+            const renderContext = { canvasContext: ctx, viewport: viewport };
             const renderTask = page.render(renderContext);
 
-            renderTask.promise.then(function() {
+            renderTask.promise.then(() => {
                 pageRendering = false;
                 if (pageNumPending !== null) {
                     renderPage(pageNumPending, canvas, ctx);
                     pageNumPending = null;
                 }
-            }).catch(function(error) {
-                console.error("Erro ao renderizar a página: ", error);
-            });
-        }).catch(function(error) {
-            console.error("Erro ao carregar a página: ", error);
-        });
+            }).catch(error => console.error("Erro ao renderizar a página:", error));
+        }).catch(error => console.error("Erro ao carregar a página:", error));
     }
 
     function queueRenderPage(num) {
@@ -88,12 +82,11 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
                 setInterval(nextPage, 10000);
             }
 
-            // Atualiza o QR Code com o PDF atual (opcional)
-            const qrImg = document.querySelector(".qr-code img");
+            const qrImg = document.getElementById("qr-code-img");
             if (qrImg) {
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pdfUrl)}`;
             }
-        }).catch(function(error) {
+        }).catch(error => {
             console.error("Erro ao carregar o PDF:", error);
         });
     }
@@ -102,14 +95,13 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
         .then(response => response.json())
         .then(data => {
             if (!data.files || data.files.length === 0) {
-                console.error("Nenhum PDF encontrado na pasta.");
+                console.error("Nenhum PDF encontrado na pasta ou falta de permissão.");
                 return;
             }
 
-            pdfList = data.files.map(file => `https://drive.google.com/uc?id=${file.id}&export=download`);
+            pdfList = data.files.map(file => `https://drive.google.com/uc?export=download&id=${file.id}`);
             loadPdfFromDrive(pdfList[currentPdfIndex]);
 
-            // Troca o PDF a cada 30s (opcional)
             if (pdfList.length > 1) {
                 setInterval(() => {
                     currentPdfIndex = (currentPdfIndex + 1) % pdfList.length;
@@ -121,7 +113,6 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
             console.error("Erro ao buscar arquivos do Google Drive:", error);
         });
 
-    // Atualizar hora
     function updateTime() {
         const now = new Date();
         const hours = now.getHours().toString().padStart(2, '0');
@@ -130,8 +121,6 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
         const timeElement = document.getElementById('time');
         if (timeElement) {
             timeElement.textContent = `${hours}:${minutes}:${seconds}`;
-        } else {
-            console.error("Elemento com ID 'time' não encontrado.");
         }
     }
 
