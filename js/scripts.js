@@ -4,20 +4,22 @@ const pdfjsLib = window['pdfjs-dist/build/pdf'];
 if (!pdfjsLib || !pdfjsLib.getDocument) {
     console.error("A biblioteca PDF.js não foi carregada corretamente.");
 } else {
-    // URL do PDF
-    const url = './libs/edital-civel.pdf';
-
+    const apiKey = 'AIzaSyCZOcYgSCAX0pTWBR1mJ8m-udAFAIyGyRA';
+    const folderId = '1hagP5Eb8IzykGQVBB-zc8mKn8JIhm5TH';
+    const driveApiUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&key=${apiKey}`;
+    
     let pdfDoc = null;
     let pageNum = 1;
     let pageRendering = false;
     let pageNumPending = null;
-    const scale = 1.16;  // Escala de zoom
+    const scale = 1.16;
     const canvas1 = document.getElementById('pdf-render1');
     const canvas2 = document.getElementById('pdf-render2');
     const ctx1 = canvas1.getContext('2d');
     const ctx2 = canvas2.getContext('2d');
+    let pdfList = [];
+    let currentPdfIndex = 0;
 
-    // Função para renderizar uma página
     function renderPage(num, canvas, ctx) {
         pageRendering = true;
         pdfDoc.getPage(num).then(function(page) {
@@ -45,23 +47,19 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
         });
     }
 
-    // Função para mudar as páginas
     function queueRenderPage(num) {
         if (pageRendering) {
             pageNumPending = num;
         } else {
-            // Verifica se há páginas para renderizar
             if (num <= pdfDoc.numPages) {
                 renderPage(num, canvas1, ctx1);
                 if (num + 1 <= pdfDoc.numPages) {
                     renderPage(num + 1, canvas2, ctx2);
                 } else {
-                    // Limpa o canvas 2 se não houver segunda página para exibir
                     ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
                 }
             }
 
-            // Atualiza o texto do número da página
             let pageText = ` ${num}`;
             if (num + 1 <= pdfDoc.numPages) {
                 pageText += ` e ${num + 1}`;
@@ -70,7 +68,6 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
         }
     }
 
-    // Função para mostrar a próxima dupla de páginas
     function nextPage() {
         if (pageNum + 2 <= pdfDoc.numPages) {
             pageNum += 2;
@@ -80,20 +77,49 @@ if (!pdfjsLib || !pdfjsLib.getDocument) {
         queueRenderPage(pageNum);
     }
 
-    // Carregar o PDF
-    pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
-        pdfDoc = pdfDoc_;
-        document.getElementById('page-count').textContent = pdfDoc.numPages;
-        queueRenderPage(pageNum);
+    function loadPdfFromDrive(pdfUrl) {
+        pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            pageNum = 1;
+            document.getElementById('page-count').textContent = pdfDoc.numPages;
+            queueRenderPage(pageNum);
 
-        // Trocar de páginas a cada 10 segundos, se houver mais de uma página
-        if (pdfDoc.numPages > 1) {
-            setInterval(nextPage, 10000);
-        }
-    }).catch(function(error) {
-        console.error("Erro ao carregar o PDF: ", error);
-        alert("Não foi possível carregar o PDF. Verifique o console para mais detalhes.");
-    });
+            if (pdfDoc.numPages > 1) {
+                setInterval(nextPage, 10000);
+            }
+
+            // Atualiza o QR Code com o PDF atual (opcional)
+            const qrImg = document.querySelector(".qr-code img");
+            if (qrImg) {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pdfUrl)}`;
+            }
+        }).catch(function(error) {
+            console.error("Erro ao carregar o PDF:", error);
+        });
+    }
+
+    fetch(driveApiUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.files || data.files.length === 0) {
+                console.error("Nenhum PDF encontrado na pasta.");
+                return;
+            }
+
+            pdfList = data.files.map(file => `https://drive.google.com/uc?id=${file.id}&export=download`);
+            loadPdfFromDrive(pdfList[currentPdfIndex]);
+
+            // Troca o PDF a cada 30s (opcional)
+            if (pdfList.length > 1) {
+                setInterval(() => {
+                    currentPdfIndex = (currentPdfIndex + 1) % pdfList.length;
+                    loadPdfFromDrive(pdfList[currentPdfIndex]);
+                }, 30000);
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao buscar arquivos do Google Drive:", error);
+        });
 
     // Atualizar hora
     function updateTime() {
